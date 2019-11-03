@@ -18,7 +18,8 @@ $msg = <<MSG
 BF3 - development environment
 
 COMMANDS:
- - b32 --run <your module>
+ - bf3 --run <your module>
+ - bf3_env --info
 
 ------------------------------------------------------
 MSG

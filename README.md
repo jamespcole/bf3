@@ -246,7 +246,7 @@ To run our `example2` module as a command we can simply run the following:
 bf3 --run 'mymodules.examples.example2'
 ```
 
-### Adding arguments to a command
+### Adding Arguments to a Command
 
 BF3 provides a useful argument parser and validator with some advanced features such as dependencies or exclusions between arguments.  The example below is a very basic usage of the BF3 arguments, the advanced features are discussed later in this document.
 
@@ -312,3 +312,41 @@ hello-world --suffix '@@@'
 ```
 
 The compiled script file will be located in the `install_hooks` directory of you current active BF3 environment.
+
+## Managing BF3 Environments
+
+BF3 implements the concept of environments(kind of inspired by python venv).  BF3 environments make it easy to add modules from sources like git or isolate your project specific scripts from the BF3 core.  BF3 environments can be "stacked" meaning that you can combine modules from multiple sources in a single environment.
+
+The following example shows how to create a new environment:
+
+```bash
+bf3_env --create myenv
+```
+
+This command will create the directory structure and base files for you new environment in the directory passed to the `--create` argument.  The structure of the environment looks like this:
+
+```
+env
+    | activate.sh
+    | add.sh
+modules
+install_hooks
+```
+Now to use this new environment we can do one of two things, either "add" it to the current environment or "activate" it making it the current active environment.  While "add" and "activate" are similar there are important differences:
+
+* add should be used by other environments(often from that environment's `activate.sh` file) that might depend on modules in your environment
+* activate sets up your environment and may include adding other environments
+
+The majority of the time you will probably just want to activate your environment with the command:
+
+```bash
+. myenv/env/activate.sh
+```
+
+TIP: if you want your BF3 environment activated by default when you log in you can add your activation command to the end of your .bashrc file.
+
+Once you have activated you environment you can view the configuration of the active environment by running the command:
+
+```bash
+bf3_env --info
+```
