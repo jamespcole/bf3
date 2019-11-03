@@ -1,0 +1,161 @@
+{{#b:h1}}Heading 1{{/b:h1}}
+{{#b:b}}This is some bold text{{/b:b}}
+
+And here is some unstyled text.
+
+Some normal paragraph text.  Followed by some {{#b:u}}underlined words.{{/b:u}}
+
+
+{{#b:h2}}A Heading 2{{/b:h2}}
+
+Here is a simple list:
+{{#b:list}}
+{{#b:li}}A list item{{/b:li}}
+{{#b:li}}A second item{{/b:li}}
+{{#b:list}}
+{{#b:li}}A nested list{{/b:li}}
+{{#b:li}}With multiple items{{/b:li}}
+{{/b:list}}
+
+{{#b:li}}And Number 3{{/b:li}}
+{{/b:list}}
+
+{{b:br}}
+Here is a more complex example:
+
+{{#b:list}}
+{{#b:li}}{{#b:u}}Some {{#b:warning}}inline{{/b:warning}} styling{{/b:u}}{{/b:li}}
+{{#b:li}}An inline icon {{#b:danger}}{{#b:icon}}warning{{/b:icon}}{{/b:danger}} with colour{{/b:li}}
+{{#b:list}}
+{{#b:li}}{{#b:b}}Text with {{#b:success}}colours{{/b:success}}{{/b:b}} and {{#b:em}}emphasis!{{/b:em}}{{/b:li}}
+{{/b:list}}
+
+{{#b:li}}And Number 3{{/b:li}}
+{{/b:list}}
+
+{{b:br}}
+{{#b:h3}}A Heading 3{{/b:h3}}
+
+{{#b:info}}Box it up!{{/b:info}}
+Use the 'box' tag to highlight important info.
+
+{{#b:box}}{{#b:b}}{{#b:info}}A Box for Content{{/b:info}}{{/b:b}}
+
+You can {{#b:u}}use markup inside{{/b:u}} the box too.
+{{#b:d}}    It will attempt to wrap long text if it can.{{/b:d}}
+
+
+{{/b:box}}
+
+{{b:br}}
+{{b:hr}}
+{{b:br}}
+{{#b:h2}}Draw Diagrams{{/b:h2}}
+You can use BML to draw inline diagrams using the dot language with graphviz.
+
+{{#b:h5}}A simple Diagram Example{{/b:h5}}
+{{#b:u}}NOTE:{{/b:u}} This graph is made using the graphiz-dot tag and is rendered in both terminal and Markdown outputs.
+It will render as ASCII in the terminal or as an embedded base64 png in Markdown.
+
+
+{{#b:graphviz-dot}}
+digraph g {
+
+    graph [fontname = "helvetica bold"];
+    node [fontname = "helvetica"];
+    edge [fontname = "helvetica"];
+    rankdir = TB;
+
+    labelloc="t";
+    label="Example Workflow";
+
+    a[label="Step 1", shape="invhouse"]
+    b[label="Decision", shape="diamond"]
+    c[label="Some Input", shape="rect"]
+    d[label="Failed", shape="rect"]
+    e[label="Imported", shape="rect"]
+
+    {rank = same; a;}
+    {rank = same; c; b;}
+    {rank = same; d; e;}
+
+    a->b;
+    b->c[label="Valid"];
+    c->a[dir=both, label="Retry"];
+    c->e[label="OK"]
+    b->d[label="Invalid"];
+
+}
+{{/b:graphviz-dot}}
+{{b:br}}
+{{b:hr}}
+
+{{#b:h2}}Layout{{/b:h2}}
+
+Use the horiz tag to change the direction of a list:
+
+{{#b:horiz}}
+{{#b:list}}
+{{#b:li}}This a list{{/b:li}}
+{{#b:li}}Wrapped in the horiz tag{{/b:li}}
+{{#b:li}}So the items display{{/b:li}}
+{{#b:li}}Side by side{{/b:li}}
+{{#b:li}}Instead of vertically{{/b:li}}
+{{/b:list}}
+{{/b:horiz}}
+
+{{b:br}}
+Or you can even use it on lines of text
+
+{{#b:horiz}}
+{{#b:icon}}success{{/b:icon}} A List
+{{#b:icon}}info{{/b:icon}}  Of Random
+{{#b:icon}}info{{/b:icon}}  Words and Icons
+{{#b:icon}}danger{{/b:icon}} On Separate
+{{#b:icon}}success{{/b:icon}} Lines
+{{/b:horiz}}
+
+
+{{#b:h4}}ASCII Banners:{{/b:h4}}
+
+You can use figlet for big ASCII style banners
+{{#b:figlet}}Figlet!{{/b:figlet}}
+
+{{b:br}}
+{{b:hr}}
+{{b:br}}
+
+{{#b:h2}}Tag Processing{{/b:h2}}
+
+{{#b:h4}}Normal Tags{{/b:h4}}
+For most cases you will want to use the standard start and end tag delimiters.
+eg: "{!{" and "}!}"
+
+{!{#b:b}!}Bold Text{!{/b:b}!}
+
+{{#b:b}}Bold Text{{/b:b}}
+
+However sometimes you may wish for tags in the document to be processed in a certan sequence or not at all.
+
+{{#b:h4}}Before Tags{{/b:h4}}
+These will be processed for the entire document first, before normal tags are executed.
+
+{!<{#b:b}!<}Parsed First!{!<{/b:b}!<}
+
+{<{#b:b}<}Parsed First!{<{/b:b}<}
+
+{{#b:h4}}After Tags{{/b:h4}}
+These will be processed for the entire document after the "before" and "normal" tags are executed.
+
+{!>{#b:u}!>}Parsed After!{!>{/b:u}!>}
+
+{>{#b:u}>}Parsed After!{>{/b:u}>}
+
+{{#b:h4}}Never Tags{{/b:h4}}
+These tags will not be processed.
+This can be useful when you want to literally reresent tag delimiters within a document.
+Or you are pre-compiling parts of the document to precache the static parts and want to only process the dynamic parts of the document at runtime.
+
+{!!{#b:u}!!}Parsed Never!{!!{/b:u}!!}
+
+{!{#b:u}!}Parsed Never!{!{/b:u}!}

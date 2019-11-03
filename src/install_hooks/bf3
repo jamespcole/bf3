@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+source "${BF3_BOOTSTRAP}"
+
+bf3.run.module() {
+
+    parameters.add --key 'run' \
+        --namespace 'run' \
+        --name 'Module' \
+        --alias '-r' \
+        --alias '--run' \
+        --desc 'The name of the module to run.' \
+        --required-unless 'run::build' \
+        --excludes 'run::build' \
+        --excludes 'run::buildName' \
+        --has-value 'y'
+
+    parameters.add --key 'build' \
+        --namespace 'run' \
+        --name 'Build' \
+        --alias '-b' \
+        --alias '--build' \
+        --desc 'Build into a single distributable command.' \
+        --required-unless 'run::run' \
+        --excludes 'run::run' \
+        --inlcudes 'run::build' \
+        --has-value 'y'
+
+    parameters.add --key 'buildName' \
+        --namespace 'run' \
+        --name 'Build Name' \
+        --alias '--build-name' \
+        --desc 'The name of the command when built.' \
+        --required-unless 'run::run' \
+        --has-value 'y'
+
+
+    local -A params
+    local -a unknown
+    parameters.load --namespace 'run' --ignore-unknown true --args "${@}"
+
+    globals['isBuilding']=false
+
+    if [ "${params[run>>specified]}" == '1' ]; then
+        globals['commandNamespace']="${params['run']}"
+        globals['commandName']="${params['run']}"
+        logger.processStartupArgs
+        logger.warning --message \
+            "You are running this module using runtime transpilation."
+        logger.warning --message \
+            "This is useful during development but has significantly reduced performance."
+        logger.warning --message \
+            "To compile this command run:"
+        logger.warning --message \
+            "    bf3 --build '${params['run']}' --build-name 'my-command'"
+        logger.hr
+
+        logger.info --message \
+            "Transpiling command..."
+
+        local basetime=$(date +%s%3N)
+
+        import.require "${params['run']}"
+
+        local msTotal=$(($(date +%s%3N)-$basetime))
+        local timeStr="${msTotal}ms"
+        if [ $msTotal -gt 1000 ]; then
+            local seconds="$(($msTotal/1000))"
+            local roundedMs=$(($seconds*1000))
+            local remainderMs=$(($msTotal-$roundedMs))
+            timeStr="${seconds}.${remainderMs} seconds"
+        fi
+        logger.info --message \
+            "Transpiled ${#__import_DEPENDENCIES[@]} modules in: ${timeStr}"
+        logger.hr
+
+        import.useModules
+        bf3.cmd.run "${params['run']}" "${unknown[@]}"
+    else
+        globals['isBuilding']=true
+        globals['commandNamespace']="${params['build']}"
+        globals['commandName']="${params['build']}"
+        logger.processStartupArgs
+        if [ "${params['buildName>>specified']}" ]; then
+            globals['commandName']="${params['buildName']}"
+        fi
+        bf3.cmd.build "${params['build']}" "${unknown[@]}"
+    fi
+}
+
+bf3.cmd.bootstrap.init "$@"
+bf3.run.module "$@"

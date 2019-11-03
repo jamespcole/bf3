@@ -1,0 +1,16 @@
+{{#b:fmt}}
+
+{{b:br}}
+
+{{#b:h4}}{{templateData.commandName}}{{/b:h4}}
+
+{{b:br}}{{b:br}}
+
+{{#b:h5}}Info{{/b:h5}}
+
+{{b:br}}
+
+{{b:in}}	Built On: {{#b:d}}{{templateData.buildDate}}{{/b:d}}{{b:br}}
+{{b:in}}	Module: {{#b:d}}{{templateData.commandNamespace}}{{/b:d}}{{b:br}}
+
+{{/b:fmt}}
