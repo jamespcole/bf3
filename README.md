@@ -1,7 +1,7 @@
 # BF3
 
 BF3 is a framework for making working with bash scripts a little more organised.
-It is loosely inspired by webpack(and a few other things) and adds a bunch of features to help writing bash scripts, including:
+It is loosely inspired by webpack(and a few other things) and adds a bunch of features to help write bash scripts, including:
 * namespacing
 * an import system for dependencies
 * flexible and easy to use argument parsing and validation
@@ -14,7 +14,7 @@ It is loosely inspired by webpack(and a few other things) and adds a bunch of fe
 ## The Structure
 
 ### Namespaces
-Namespaces used to import modules into you scripts.  A modules namespace is defined by its path from the root of the `modules` directory(using '.' as delimiters between path segments).  By convention you place your script in a file called `module.sh` inside the module's directory.
+Namespaces are used to import modules into your scripts.  A module's namespace is defined by its path from the root of the `modules` directory(using '.' as delimiters between path segments).  By convention you place your script in a file called `module.sh` inside the module's directory.
 
 For example, if you added a new module like this:
 ```
