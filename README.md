@@ -350,3 +350,30 @@ Once you have activated you environment you can view the configuration of the ac
 ```bash
 bf3_env --info
 ```
+
+## Installation and Setup
+
+Pull the latest BF3 core from git:
+
+```bash
+git clone git@github.com:jamespcole/bf3.git
+. bf3/src/env/activate.sh
+```
+
+Then create a BF3 environment for your custom modules:
+
+```bash
+bf3_env --create /some/path
+. /some/path/env/activate.sh
+```
+
+ You can now start creating your own modules inside the `modules` directory which is added automatically when a new environment is created.
+
+ If you want your environment to be automatically activated on login add the activation command to the end of your `.bashrc` file, eg:
+
+```bash
+. /some/path/env/activate.sh > /dev/null
+```
+
+
+### Adding Module Libraries to your Environment
