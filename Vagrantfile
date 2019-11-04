@@ -50,7 +50,8 @@ Vagrant.configure("2") do |config|
     if File.exists? afterScriptPath then
         config.vm.provision "shell",
             path: afterScriptPath,
-            privileged: false
+            privileged: false,
+            keep_color: true
     end
 
 end

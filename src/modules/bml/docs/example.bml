@@ -135,7 +135,7 @@ eg: "{!{" and "}!}"
 
 {{#b:b}}Bold Text{{/b:b}}
 
-However sometimes you may wish for tags in the document to be processed in a certan sequence or not at all.
+However sometimes you may wish for tags in the document to be processed in a certain sequence or not at all.
 
 {{#b:h4}}Before Tags{{/b:h4}}
 These will be processed for the entire document first, before normal tags are executed.
@@ -153,7 +153,7 @@ These will be processed for the entire document after the "before" and "normal" 
 
 {{#b:h4}}Never Tags{{/b:h4}}
 These tags will not be processed.
-This can be useful when you want to literally reresent tag delimiters within a document.
+This can be useful when you want to literally represent tag delimiters within a document.
 Or you are pre-compiling parts of the document to precache the static parts and want to only process the dynamic parts of the document at runtime.
 
 {!!{#b:u}!!}Parsed Never!{!!{/b:u}!!}

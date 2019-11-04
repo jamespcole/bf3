@@ -1,0 +1,12 @@
+{{#b:h1}}BF3{{/b:h1}}
+{{#b:b}}Bash Framework 3{{/b:b}}
+Development Environment
+
+{{#b:box}}{{#b:b}}{{#b:info}}Useful Commands{{/b:info}}{{/b:b}}
+
+bf3 --run {{#b:d}}<your_module>{{/b:d}}
+bf3 --build {{#b:d}}<your_module>{{/b:d}} --build-name {{#b:d}}<command_name>{{/b:d}}
+bf3_env --info
+bf3_env --create {{#b:d}}<my_new_module>{{/b:d}}
+
+{{/b:box}}
