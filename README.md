@@ -329,6 +329,7 @@ This command will create the directory structure and base files for you new envi
 env
     | activate.sh
     | add.sh
+    | libs.sh
 modules
 install_hooks
 ```
@@ -350,6 +351,32 @@ Once you have activated you environment you can view the configuration of the ac
 ```bash
 bf3_env --info
 ```
+
+### Adding Module Libraries to your Environment
+
+To add additional module libraries to your environment edit the `env/libs.sh` file.
+
+For example to add the provisioning modules library to your environment you first need to clone it from git and then add its location to your `env/libs.sh` file.
+
+```bash
+cd module_libs
+git clone https://github.com/jamespcole/bf3-provision.git
+```
+
+ Then append the following to your environment's `env/libs.sh` file:
+
+```bash
+source "${BF3_ACTIVE_PATH}/module_libs/bf3-provision/src/env/add.sh"
+```
+
+Then reactivate your environment:
+
+```bash
+source "${BF3_ACTIVE_PATH}/env/activate.sh"
+```
+
+You can now import the modules from `bf3-provision` library for use your modules.
+
 
 ## Installation and Setup
 
@@ -374,6 +401,3 @@ bf3_env --create /some/path
 ```bash
 . /some/path/env/activate.sh > /dev/null
 ```
-
-
-### Adding Module Libraries to your Environment
