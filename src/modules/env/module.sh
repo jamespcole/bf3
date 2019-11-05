@@ -1,5 +1,6 @@
 resource.relative '@rel==templates/activate.sh' into '@this'
 resource.relative '@rel==templates/add.sh' into '@this'
+resource.relative '@rel==templates/libs.sh' into '@this'
 
 @namespace
 
@@ -59,9 +60,11 @@ makeEnv() {
     mkdir -p "@params[path]/env"
     mkdir -p "@params[path]/modules"
     mkdir -p "@params[path]/install_hooks"
+    mkdir -p "@params[path]/module_libs"
 
     echo "$(@this.getActivateFile)" > "@params[path]/env/activate.sh"
     echo "$(@this.getAddFile)" > "@params[path]/env/add.sh"
+    echo "$(@this.getLibsFile)" > "@params[path]/env/libs.sh"
 
     logger.info --message "To activate it run '. @params[path]/env/activate.sh'"
 }
@@ -79,4 +82,10 @@ getActivateFile() {
     templateData[baseFrameworkPath]="${BF3_FW_PATH}"
     mustache.compile \
         --template "$(@this.resource.get 'templates/activate.sh')"
+}
+
+getLibsFile() {
+    local -A templateData
+    mustache.compile \
+        --template "$(@this.resource.get 'templates/libs.sh')"
 }
