@@ -46,13 +46,17 @@ import.init() {
 			originalNamespace="${originalNamespace/#*==/}"
 		}
 
-		# If it start with a dot it's relative, but we should strip it off the
+		# If it starts with a dot it's relative, but we should strip it off the
 		# namesspace so functions don't start with a .
 		[ "${originalNamespace:0:1}" == "." ] && {
 			originalNamespace="${originalNamespace/#./}"
 		}
 
 		namesSpaceAs="${originalNamespace}"
+
+		local importerFile="$(basename -- ${BASH_SOURCE[ 1 ]})"
+		local importerNS="${importerFile/%.sh}"
+		echo "${importerNS} is importing ${originalNamespace}"
 
 		local nameSpaceOuter
 		local __require_file='module'
@@ -98,6 +102,7 @@ import.init() {
 				"${namesSpaceAs}" \
 				"${originalNamespace}" \
 				"${importOp}")
+			# echo "${topSourceCode}"
 
 			local namespacedCode=$(build.transpiler.transpile "${moduleFile}" "${originalNamespace}" "${importOp}" "${namesSpaceAs}")
 
@@ -154,6 +159,14 @@ import.init() {
 		topSourceCode=$(echo "${topSourceCode}" | sed "s&@this\.&${baseNamespace}.&")
 		# Replace any references at the end of a string
 		topSourceCode=$(echo "${topSourceCode}" | sed "s&@this&${baseNamespace}&")
+		# local varsArrName="BF3_${baseNamespace//./_}_PARENTS"
+
+
+		# topSourceCode="declare importerModule='${baseNamespace}'\n${topSourceCode}\n"
+		# # topSourceCode="\n${varsArrName}+=('test')\n\n${topSourceCode}"
+		# topSourceCode="if [ ! -z \$importerModule ]; then\n${varsArrName}+=(\"\$importerModule\")\nfi\n\n${topSourceCode}"
+		# topSourceCode="if [ -z \$${varsArrName} ]; then\ndeclare -a -g ${varsArrName}\nfi\n\n${topSourceCode}"
+
 
 		echo "${topSourceCode}"
 	}
@@ -291,6 +304,17 @@ import.init() {
 	import.functionExists() {
 		declare -f -F $1 > /dev/null
 		return $?
+	}
+	import.isModeuleInitialized() {
+	    local __import_modName="$1"
+	    if [[ "${__import_modName}" == '' ]]; then
+	        return 1
+	    fi
+	    if [[ ! ${__import_INITED["${__import_modName}"]+exists} ]]; then
+	        return 1
+	    else
+	        return 0
+	    fi
 	}
 	import.loadAppPaths() {
 		local -a __import_tmp_paths

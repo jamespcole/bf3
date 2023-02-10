@@ -1,0 +1,1551 @@
+#!/usr/bin/env bash
+docs.help.init () 
+{ 
+    if [ -z $BF3_docs_help_VARS_REAL ]; then
+        declare -A -g BF3_docs_help_VARS_REAL;
+        declare -g -n BF3_docs_help_VARS=BF3_docs_help_VARS_REAL;
+    fi;
+    BF3_docs_help_VARS[namespace]='docs.help';
+    function docs.help.__init () 
+    { 
+        docs.help.args
+    };
+    function docs.help.args () 
+    { 
+        parameters.add --key 'showHelp' --namespace 'global' --name 'Show Help' --alias '--help' --desc 'Print help for the command.' --has-value 'm' --priority '2' --callback 'docs.help.printHelp'
+    };
+    function docs.help.printHelp () 
+    { 
+        docs.help.printCommandInfo "$@";
+        docs.help.printArgs "$@";
+        exit
+    };
+    function docs.help.printArgs::precache () 
+    { 
+        if import.isModeuleInitialized 'bml'; then
+            docs.help.printArgsBml "$@";
+        else
+            docs.help.printArgsPlain "$@";
+        fi
+    };
+    function docs.help.printArgsBml () 
+    { 
+        local argHelp="{{b:br}}{{#b:h5}}Arguments{{/b:h5}}{{b:br}}{{b:br}}";
+        local argKey;
+        for argKey in "${paramKeys[@]}";
+        do
+            local keyPrefix="${argKey}>>";
+            if [ "${globals[''isBuilding'']}" == true ] && [ "${parameterDefinitions[${keyPrefix}namespace]}" == 'run' ]; then
+                continue;
+            fi;
+            if [ "${globals[''commandNamespace'']}.main" != "${parameterDefinitions[${keyPrefix}namespace]}" ] && [ "${parameterDefinitions[${keyPrefix}namespace]}" != 'global' ]; then
+                continue;
+            fi;
+            local aliases="${parameterDefinitions[${keyPrefix}alias_list]}";
+            local name="${parameterDefinitions[${keyPrefix}name]}";
+            local desc="${parameterDefinitions[${keyPrefix}desc]}";
+            local type="${parameterDefinitions[${keyPrefix}type]}";
+            local typeInfo='';
+            if [ "$type" == 'enum' ]; then
+                local enumList="${parameterDefinitions[${keyPrefix}enum-value_list]}";
+                typeInfo="{{b:in}}{{#b:d}}Must be one of the values: ${enumList}{{/b:d}}{{b:br}}";
+            fi;
+            argHelp="${argHelp}{{#b:b}}${aliases}{{/b:b}}, {{#b:u}}${name}{{/b:u}}{{b:br}}";
+            argHelp="${argHelp}{{b:in}}{{#b:d}}${desc}{{/b:d}}{{b:br}}";
+            argHelp="${argHelp}${typeInfo}";
+            argHelp="${argHelp}{{b:br}}";
+        done;
+        bml.print --text "${argHelp}"
+    };
+    function docs.help.printArgsPlain () 
+    { 
+        local argHelp="
+Arguments
+
+";
+        local argKey;
+        for argKey in "${paramKeys[@]}";
+        do
+            local keyPrefix="${argKey}>>";
+            if [ "${globals[''isBuilding'']}" == true ] && [ "${parameterDefinitions[${keyPrefix}namespace]}" == 'run' ]; then
+                continue;
+            fi;
+            if [ "${globals[''commandNamespace'']}.main" != "${parameterDefinitions[${keyPrefix}namespace]}" ] && [ "${parameterDefinitions[${keyPrefix}namespace]}" != 'global' ]; then
+                continue;
+            fi;
+            local aliases="${parameterDefinitions[${keyPrefix}alias_list]}";
+            local name="${parameterDefinitions[${keyPrefix}name]}";
+            local desc="${parameterDefinitions[${keyPrefix}desc]}";
+            local type="${parameterDefinitions[${keyPrefix}type]}";
+            local typeInfo='';
+            if [ "$type" == 'enum' ]; then
+                local enumList="${parameterDefinitions[${keyPrefix}enum-value_list]}";
+                typeInfo="Must be one of the values: ${enumList}
+";
+            fi;
+            argHelp="${argHelp}${aliases}, ${name}
+";
+            argHelp="${argHelp}${desc}
+";
+            argHelp="${argHelp}${typeInfo}
+";
+        done;
+        echo "${argHelp}"
+    };
+    function docs.help.printCommandInfo::precache () 
+    { 
+        docs.help.getCommandInfo "$@"
+    };
+    function docs.help.getCommandInfo () 
+    { 
+        if import.isModeuleInitialized 'bml'; then
+            docs.help.getCommandInfoBml "$@";
+        else
+            docs.help.getCommandInfoPlain "$@";
+        fi
+    };
+    function docs.help.getCommandInfoPlain () 
+    { 
+        local -A templateData;
+        templateData[commandName]="${globals['commandName']}";
+        templateData[buildDate]="${globals['buildDate']}";
+        templateData[commandNamespace]="${globals['commandNamespace']}";
+        templateData[description]='';
+        import.functionExists "${globals['commandNamespace']}.docs.description" && { 
+            templateData[description]=$(${globals['commandNamespace']}.docs.description)
+        };
+        echo "${templateData[commandName]}";
+        echo "${templateData[description]}
+";
+        echo "Info";
+        echo "	Built On: ${templateData[buildDate]}";
+        echo "	Module: ${description[commandNamespace]}"
+    };
+    function docs.help.getCommandInfoBml () 
+    { 
+        local -A templateData;
+        templateData[commandName]="${globals['commandName']}";
+        templateData[buildDate]="${globals['buildDate']}";
+        templateData[commandNamespace]="${globals['commandNamespace']}";
+        templateData[description]='';
+        import.functionExists "${globals['commandNamespace']}.docs.description" && { 
+            templateData[description]=$(${globals['commandNamespace']}.docs.description)
+        };
+        import.functionExists "${globals['commandNamespace']}.docs.descriptionBml" && { 
+            local bmlDesc="$(${globals['commandNamespace']}.docs.descriptionBml)";
+            templateData[description]="${bmlDesc}"
+        };
+        bml.print --text "$(docs.help.resource.get 'templates/info.bml')"
+    };
+    function docs.help.printArgs () 
+    { 
+        if import.functionExists "${FUNCNAME[0]}::cached"; then
+            "${FUNCNAME[0]}::cached";
+            return;
+        fi;
+        local result=$("${FUNCNAME[0]}::precache" "$@");
+        local __wrapped_function="${FUNCNAME[0]}::cached() {         cat << 'EOF'
+${result}
+EOF
+            }";
+        eval "${__wrapped_function}";
+        ${FUNCNAME[0]}::cached
+    };
+    function docs.help.printCommandInfo () 
+    { 
+        if import.functionExists "${FUNCNAME[0]}::cached"; then
+            "${FUNCNAME[0]}::cached";
+            return;
+        fi;
+        local result=$("${FUNCNAME[0]}::precache" "$@");
+        local __wrapped_function="${FUNCNAME[0]}::cached() {         cat << 'EOF'
+${result}
+EOF
+            }";
+        eval "${__wrapped_function}";
+        ${FUNCNAME[0]}::cached
+    }
+}
+docs.help.resource.get () 
+{ 
+    local __file_path="$1";
+    local __wrap_function="docs.help.resource.${__file_path////:-:}";
+    import.functionExists "${__wrap_function}" || { 
+        logger.error --message "Resource '${__file_path}' not found.";
+        logger.die
+    };
+    $__wrap_function
+}
+docs.help.resource.templates:-:info.bml () 
+{ 
+    cat <<'EOF'
+{{#b:fmt}}
+
+{{b:br}}
+
+{{#b:h4}}{{templateData.commandName}}{{/b:h4}}
+{{b:br}}
+{{templateData.description}}
+
+{{b:br}}{{b:br}}
+
+{{#b:h5}}Info{{/b:h5}}
+
+{{b:br}}
+
+{{b:in}}	Built On: {{#b:d}}{{templateData.buildDate}}{{/b:d}}{{b:br}}
+{{b:in}}	Module: {{#b:d}}{{templateData.commandNamespace}}{{/b:d}}
+
+{{/b:fmt}}
+EOF
+
+}
+logger.handlers.basic.init () 
+{ 
+    if [ -z $BF3_logger_handlers_basic_VARS_REAL ]; then
+        declare -A -g BF3_logger_handlers_basic_VARS_REAL;
+        declare -g -n BF3_logger_handlers_basic_VARS=BF3_logger_handlers_basic_VARS_REAL;
+    fi;
+    BF3_logger_handlers_basic_VARS[namespace]='logger.handlers.basic';
+    [ -z $BF3_logger_handlers_basic_settings ] && declare -A -g BF3_logger_handlers_basic_settings;
+    BF3_logger_handlers_basic_settings['print_prefix']='1';
+    BF3_logger_handlers_basic_VARS[prefixSep]=': ';
+    [ -z $BF3_logger_handlers_basic_prefixes ] && declare -A -g BF3_logger_handlers_basic_prefixes;
+    BF3_logger_handlers_basic_prefixes['INFO']="INFO${BF3_logger_handlers_basic_VARS[prefixSep]}";
+    BF3_logger_handlers_basic_prefixes['ERROR']="ERROR${BF3_logger_handlers_basic_VARS[prefixSep]}";
+    BF3_logger_handlers_basic_prefixes['WARNING']="WARNING${BF3_logger_handlers_basic_VARS[prefixSep]}";
+    BF3_logger_handlers_basic_prefixes['DEBUG']="DEBUG${BF3_logger_handlers_basic_VARS[prefixSep]}";
+    [ -z $BF3_logger_handlers_basic_theme ] && declare -A -g BF3_logger_handlers_basic_theme;
+    BF3_logger_handlers_basic_theme['HR']="-----------------------------------------------";
+    function logger.handlers.basic.create () 
+    { 
+        local -A __params;
+        params.get "$@";
+        local __key="${__params['id']}>>";
+        local __param;
+        for __param in "${!__params[@]}";
+        do
+            local __p_key="${__key}${__param}";
+            BF3_logger_handlers_basic_settings["${__p_key}"]='1';
+        done
+    };
+    function logger.handlers.basic.processStartupArgs () 
+    { 
+        return 0
+    };
+    function logger.handlers.basic.printCommandStart () 
+    { 
+        logger.handlers.basic.print --message "Starting..." --prefix 'SCRIPT'
+    };
+    function logger.handlers.basic.printCommandEnd () 
+    { 
+        logger.handlers.basic.print --message "Finished" --prefix 'SCRIPT'
+    };
+    function logger.handlers.basic.debug () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "${__params['message']}" --prefix "${BF3_logger_handlers_basic_prefixes['DEBUG']}"
+    };
+    function logger.handlers.basic.info () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "${__params['message']}" --prefix "${BF3_logger_handlers_basic_prefixes['INFO']}"
+    };
+    function logger.handlers.basic.success () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "${__params['message']}" --prefix 'SUCCESS'
+    };
+    function logger.handlers.basic.warning () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "${__params['message']}" --prefix "${BF3_logger_handlers_basic_prefixes['WARNING']}"
+    };
+    function logger.handlers.basic.error () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "${__params['message']}" --prefix "${BF3_logger_handlers_basic_prefixes['ERROR']}"
+    };
+    function logger.handlers.basic.stackTrace () 
+    { 
+        logger.handlers.basic.print --message '-------------- Stack Trace -----------------' --prefix 'TRACE';
+        if [ ${#FUNCNAME[@]} -gt 2 ]; then
+            local endIndex=3;
+            echo "Call tree:";
+            local i;
+            for ((i=${#FUNCNAME[@]}-2; i>${endIndex}-1; i--))
+            do
+                local callNum;
+                local funcName="${FUNCNAME[$i]}";
+                local calledBy="${FUNCNAME[$i+1]}";
+                let callNum=i-1;
+                echo " ${callNum}: ${calledBy} == Called ==> ${funcName}(...)";
+                echo "     => ${BASH_SOURCE[$i+1]}:${BASH_LINENO[$i]}";
+                if [ "${calledBy}" == '' ]; then
+                    continue;
+                fi;
+                [ -z "${__import_FUNC_SOURCE[${calledBy}]}" ] || { 
+                    echo "${__import_FUNC_SOURCE[${calledBy}]}"
+                };
+            done;
+            logger.handlers.basic.error "$@";
+            local endFunc="${FUNCNAME[${endIndex}]}";
+            echo "in function '${endFunc}'";
+            [ -z "${__import_FUNC_SOURCE[${endFunc}]}" ] || { 
+                echo "${__import_FUNC_SOURCE[${endFunc}]}"
+            };
+            [ -z "${__import_FUNC_SOURCE[${endFunc}]}" ] && { 
+                echo "${BASH_SOURCE[${endIndex}]}"
+            };
+        fi
+    };
+    function logger.handlers.basic.die () 
+    { 
+        echo "ERROR: ${1}";
+        logger.handlers.basic.stackTrace "$@"
+    };
+    function logger.handlers.basic.beginTask () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['title']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "BEGIN ${__params['title']} - ${__params['message']}" --prefix 'TASK'
+    };
+    function logger.handlers.basic.endTask () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['title']='';
+        __params['success']='';
+        params.get "$@";
+        logger.handlers.basic.print --message "END ${__params['title']} - ${__params['message']}" --prefix 'TASK'
+    };
+    function logger.handlers.basic.step () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['number']=0;
+        __params['total']=0;
+        params.get "$@";
+        logger.handlers.basic.print --message "${__params['number']}/${__params['total']} - ${__params['message']}"
+    };
+    function logger.handlers.basic.printLoop () 
+    { 
+        local __line;
+        local __is_loading='0';
+        while read __line; do
+            echo "$__line";
+        done
+    };
+    function logger.handlers.basic.print () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['prefix']='';
+        __params['no-newline']='0';
+        params.get "$@";
+        local __log_line="${__params['message']}";
+        if [ "${BF3_logger_handlers_basic_settings['print_prefix']}" != '0' ]; then
+            __log_line="${__params['prefix']}${__log_line}";
+        fi;
+        if [ "${__params['no-newline']}" == '0' ]; then
+            echo -e "${__log_line}";
+        else
+            echo -en "${__log_line}";
+        fi
+    };
+    function logger.handlers.basic.hr () 
+    { 
+        echo "${BF3_logger_handlers_basic_theme['HR']}"
+    };
+    function logger.handlers.basic.br () 
+    { 
+        echo ""
+    };
+    function logger.handlers.basic.supportsMarkup () 
+    { 
+        return 0
+    }
+}
+logger.init () 
+{ 
+    if [ -z $BF3_logger_VARS_REAL ]; then
+        declare -A -g BF3_logger_VARS_REAL;
+        declare -g -n BF3_logger_VARS=BF3_logger_VARS_REAL;
+    fi;
+    BF3_logger_VARS[namespace]='logger';
+    declare -A -g __logger_LEVEL;
+    __logger_LEVEL['DEBUG']=1;
+    __logger_LEVEL['INFO']=2;
+    __logger_LEVEL['WARN']=3;
+    __logger_LEVEL['ERROR']=4;
+    __logger_LEVEL['CRIT']=5;
+    BF3_logger_VARS[debug]=1;
+    BF3_logger_VARS[info]=2;
+    BF3_logger_VARS[warning]=3;
+    BF3_logger_VARS[error]=4;
+    declare -A -g __logger_SETTINGS;
+    __logger_SETTINGS['VERBOSITY']=3;
+    __logger_SETTINGS['WIDTH']=80;
+    __logger_SETTINGS['in-loop']='0';
+    __logger_SETTINGS['force-verbose']='0';
+    __logger_SETTINGS['decor']='0';
+    __logger_SETTINGS['force-decor']='0';
+    __logger_SETTINGS['hide-prefix']='0';
+    __logger_SETTINGS['force-hide-prefix']='0';
+    declare -A -g __logger_HANDLERS;
+    __logger_HANDLERS['console']='logger.handlers.basic';
+    function logger.args () 
+    { 
+        parameters.add --key 'logLevel' --namespace 'global' --name 'Log Level' --alias '--log-level' --desc 'The level of logging to output during execution.' --default 'info' --enum-value 'debug' --enum-value 'info' --enum-value 'warning' --enum-value 'error' --type 'enum'
+    };
+    function logger.processStartupArgs () 
+    { 
+        "${__logger_HANDLERS['console']}.processStartupArgs" "$@"
+    };
+    function logger.setConsoleLogHandler () 
+    { 
+        local -A __params;
+        __params['namespace']='';
+        __params['width']=80;
+        __params['use-colour']=1;
+        __params['allow-styles']=1;
+        __params['use-markup']=0;
+        __params['log-level']="${__logger_LEVEL['INFO']}";
+        __params['verbosity']="${__logger_SETTINGS['VERBOSITY']}";
+        params.get "$@";
+        import.useModule "${__params['namespace']}";
+        __logger_HANDLERS['console']="${__params['namespace']}";
+        "${__logger_HANDLERS['console']}.create" "$@" --id 'console'
+    };
+    function logger.printCommandStart () 
+    { 
+        if [ "${__logger_SETTINGS['decor']}" -lt 1 ]; then
+            "${__logger_HANDLERS['console']}.printCommandStart" "$@";
+        fi
+    };
+    function logger.printCommandEnd () 
+    { 
+        if [ "${__logger_SETTINGS['decor']}" -lt 1 ]; then
+            "${__logger_HANDLERS['console']}.printCommandEnd" "$@";
+        fi
+    };
+    function logger.debug () 
+    { 
+        local logLevel="${globals['logLevel']}";
+        if [ "${BF3_logger_VARS[${logLevel}]}" -gt "${BF3_logger_VARS[debug]}" ]; then
+            return 0;
+        fi;
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.debug" "$@" --prefix 'DEBUG'
+    };
+    function logger.info () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.info" "$@" --prefix 'INFO'
+    };
+    function logger.success () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.success" "$@" --prefix 'SUCCESS'
+    };
+    function logger.warning () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.warning" "$@" --prefix 'WARNING'
+    };
+    function logger.error () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.error" "$@" --prefix 'ERROR'
+    };
+    function logger.stackTrace () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.stackTrace" "$@";
+        exit 0
+    };
+    function logger.die () 
+    { 
+        local -A __params;
+        __params['message']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.die" "$@";
+        exit 0
+    };
+    function logger.beginTask () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['title']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.beginTask" "$@" --prefix 'TASK'
+    };
+    function logger.endTask () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['title']='';
+        __params['success']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.endTask" "$@" --prefix 'TASK'
+    };
+    function logger.step () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['number']=0;
+        __params['total']=0;
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.step" "$@" --prefix 'STEP'
+    };
+    function logger.printLoop () 
+    { 
+        "${__logger_HANDLERS['console']}.printLoop" "$@"
+    };
+    function logger.print () 
+    { 
+        local -A __params;
+        __params['message']='';
+        __params['prefix']='';
+        params.get "$@";
+        "${__logger_HANDLERS['console']}.print" "$@"
+    };
+    function logger.hr () 
+    { 
+        "${__logger_HANDLERS['console']}.hr" "$@"
+    };
+    function logger.br () 
+    { 
+        "${__logger_HANDLERS['console']}.br" "$@"
+    };
+    function logger.supportsMarkup () 
+    { 
+        "${__logger_HANDLERS['console']}.supportsMarkup" "$@";
+        return "$?"
+    };
+    function logger.forceVerbose () 
+    { 
+        local __force="$1";
+        if [ "$__force" == '0' ]; then
+            __logger_SETTINGS['force-verbose']='0';
+        else
+            __logger_SETTINGS['force-verbose']='1';
+        fi
+    };
+    function logger.forceDecoration () 
+    { 
+        local __force_decor="$1";
+        if [ "$__force_decor" != '' ]; then
+            __logger_SETTINGS['decor']="${__force_decor}";
+            __logger_SETTINGS['force-decor']="1";
+            logger.processStartupArgs;
+        fi
+    };
+    function logger.decorationCallback () 
+    { 
+        if [ "${__logger_SETTINGS['force-decor']}" != '1' ]; then
+            __logger_SETTINGS['decor']="${__args_VALS['logger_decoration']}";
+            logger.processStartupArgs;
+        fi;
+        return "$?"
+    };
+    function logger.forceHidePrefix () 
+    { 
+        local __hide_prefix="$1";
+        __logger_SETTINGS['hide-prefix']="${__hide_prefix}";
+        __logger_SETTINGS['force-hide-prefix']="1";
+        logger.processStartupArgs
+    }
+}
+parameters.init () 
+{ 
+    if [ -z $BF3_parameters_VARS_REAL ]; then
+        declare -A -g BF3_parameters_VARS_REAL;
+        declare -g -n BF3_parameters_VARS=BF3_parameters_VARS_REAL;
+    fi;
+    BF3_parameters_VARS[namespace]='parameters';
+    function parameters.__init () 
+    { 
+        declare -A -g parameterDefinitions;
+        declare -A -g paramDefaults;
+        declare -A -g paramSwitches;
+        declare -a -g paramKeys;
+        declare -a -g paramErrors;
+        declare -A -g globals;
+        declare -A -g addedNameSpaces
+    };
+    function parameters.add () 
+    { 
+        local keySep='>>';
+        local -A __params;
+        __params['key']=;
+        __params['namespace']=;
+        __params['name']='';
+        __params['desc']=;
+        __params['required']='0';
+        __params['type']='value';
+        __params['has-value']='m';
+        __params['priority']='0';
+        __params['callback']=;
+        params.get "$@";
+        local -a arrTypes=('alias' 'excludes' 'includes' 'required-unless');
+        arrTypes+=('enum-value');
+        local parameterNamespace="${__params['namespace']}";
+        local nsKey="${parameterNamespace}::${__params['key']}";
+        if [[ ! -n "${addedNameSpaces["${nsKey}"]+exists}" ]]; then
+            paramKeys+=("${nsKey}");
+            addedNameSpaces["${nsKey}"]=true;
+        fi;
+        local argPrefix="${nsKey}${keySep}";
+        for paramKey in "${!__params[@]}";
+        do
+            if ! parameters.arrContains arrTypes[@] "${paramKey}"; then
+                parameterDefinitions["${argPrefix}${paramKey}"]="${__params[$paramKey]}";
+            fi;
+        done;
+        paramDefaults["${nsKey}"]=;
+        paramDefaults["${nsKey}${keySep}specified"]=0;
+        local __pargs="$@";
+        local __arr_name;
+        for __arr_name in "${arrTypes[@]}";
+        do
+            parameterDefinitions["${argPrefix}${__arr_name}_list"]="";
+            parameterDefinitions["${argPrefix}${__arr_name}__count"]=0;
+            local __param_key="${nsKey}";
+            parameters.parseArrayTypes "$__arr_name" "$@";
+        done;
+        paramDefaults["${nsKey}"]="${parameterDefinitions[${argPrefix}default]}"
+    };
+    function parameters.parseArrayTypes () 
+    { 
+        local varName="$1";
+        shift;
+        local argVar;
+        local isVal=0;
+        local sep='';
+        local numName;
+        for argVar in "${@}";
+        do
+            if [ $isVal -eq 1 ]; then
+                isVal=0;
+                if [ "$varName" == 'alias' ]; then
+                    paramSwitches["${argVar}__${parameterNamespace}"]="${__param_key}";
+                fi;
+                parameterDefinitions["${argPrefix}${varName}_list"]="${parameterDefinitions["${argPrefix}${varName}_list"]}${sep}${argVar}";
+                parameterDefinitions["${argPrefix}${numName}"]="${argVar}";
+                sep=',';
+            else
+                if [ "${argVar}" == "--${varName}" ]; then
+                    isVal=1;
+                    local lenCount="${parameterDefinitions["${argPrefix}${varName}__count"]}";
+                    numName="${varName}<${lenCount}>";
+                    let parameterDefinitions["${argPrefix}${varName}__count"]=lenCount+1;
+                fi;
+            fi;
+        done
+    };
+    function parameters.parse () 
+    { 
+        local -A __params;
+        local -a remainder;
+        __params['namespace']=;
+        __params['ignore-unknown']=false;
+        params.getUntil '--args' "${@}";
+        local allowUnknown="${__params['ignore-unknown']}";
+        local parameterNamespace="${__params['namespace']}";
+        local keySep='>>';
+        local __var;
+        local __val_key;
+        local varSwitch;
+        local __is_val=0;
+        for __var in "${remainder[@]}";
+        do
+            if [ "${__var::1}" == "-" ]; then
+                __is_val=1;
+                varSwitch="${__var}";
+                __val_key="${__var}__${parameterNamespace}";
+                if [[ ! -n "${paramSwitches["${__val_key}"]+exists}" ]]; then
+                    if [ "${allowUnknown}" == false ]; then
+                        paramErrors+=("Unknown argument \"${varSwitch}\"");
+                    fi;
+                    unknown+=("${__var}");
+                fi;
+                local argKey=${paramSwitches[$__val_key]};
+                __spec_key="${argKey}${keySep}specified";
+                paramVals["${__spec_key}"]=1;
+            else
+                if [ $__is_val -eq 1 ]; then
+                    __is_val=0;
+                    if [[ ! -n "${paramSwitches["${__val_key}"]+exists}" ]]; then
+                        if [ "${allowUnknown}" == false ]; then
+                            paramErrors+=("Unknown argument \"${varSwitch}\" passed a value of \"${__var}\"");
+                        fi;
+                        unknown+=("${__var}");
+                    else
+                        paramVals["${paramSwitches[$__val_key]}"]="$__var";
+                    fi;
+                    __val_key='';
+                fi;
+            fi;
+            let paramsCount=paramsCount+1;
+        done
+    };
+    function parameters.processCallbacks () 
+    { 
+        local keySep='>>';
+        local argKey;
+        for argKey in "${paramKeys[@]}";
+        do
+            local keyPrefix="${argKey}${keySep}";
+            local argSpecified="${paramVals[${keyPrefix}specified]}";
+            local argPriority="${parameterDefinitions[${keyPrefix}priority]}";
+            if [ "$argPriority" == '2' ] && [ "$argSpecified" == '1' ]; then
+                local argCallbabck="${parameterDefinitions[${keyPrefix}callback]}";
+                if [ ! -z "$argCallbabck" ]; then
+                    "$argCallbabck";
+                fi;
+            fi;
+        done
+    };
+    function parameters.validate () 
+    { 
+        local -A __params;
+        __params['namespace']=;
+        __params['ignore-unknown']=false;
+        params.getUntil '--args' "${@}";
+        local parameterNamespace="${__params['namespace']}";
+        local keySep='>>';
+        local argKey;
+        for argKey in "${paramKeys[@]}";
+        do
+            [ "${parameterDefinitions[${argKey}${keySep}namespace]}" == "${parameterNamespace}" ] && { 
+                parameters.validateArg "${argKey}"
+            };
+        done;
+        if [ "${#paramErrors[@]}" -gt 0 ]; then
+            for __arg_err in "${paramErrors[@]}";
+            do
+                logger.error --message "$__arg_err";
+            done;
+            logger.hr;
+            logger.info --message "To see a full list of options and more info use the '--help' argument";
+            parameters.die;
+        fi
+    };
+    function parameters.loadParams () 
+    { 
+        local parameterNamespace="${FUNCNAME[1]}";
+        parameters.load --namespace "${parameterNamespace}" --args "$@"
+    };
+    function parameters.load () 
+    { 
+        local -A __params;
+        __params['namespace']=;
+        __params['ignore-unknown']=false;
+        __params['skip-validation']=false;
+        params.get "${@}";
+        local parameterNamespace="${__params['namespace']}";
+        local -A paramVals;
+        for paramKey in "${!paramDefaults[@]}";
+        do
+            if string.startsWith "${parameterNamespace}::" "${paramKey}"; then
+                paramVals["${paramKey}"]="${paramDefaults[$paramKey]}";
+            fi;
+        done;
+        parameters.parse "$@";
+        parameters.processCallbacks;
+        if [ ! "${__params['skip-validation']}" == true ]; then
+            parameters.validate "$@";
+        fi;
+        for paramValKey in "${!paramVals[@]}";
+        do
+            local normalised;
+            string.removePrefix normalised "${parameterNamespace}::" "${paramValKey}";
+            params["${normalised}"]="${paramVals[${paramValKey}]}";
+        done
+    };
+    function parameters.die () 
+    { 
+        if [ "${globals['built']}" == true ]; then
+            exit 1;
+        fi;
+        echo "-------------- Stack Trace -----------------";
+        local frame=0;
+        while caller $frame; do
+            ((frame++));
+        done;
+        echo "$*";
+        exit 1
+    };
+    function parameters.validateArg () 
+    { 
+        local argKey="$1";
+        local keySep='>>';
+        local keyPrefix="${argKey}${keySep}";
+        local hasValue=${parameterDefinitions[${keyPrefix}has-value]};
+        local argName="${parameterDefinitions[${keyPrefix}name]}";
+        local aliasList="${parameterDefinitions[${keyPrefix}alias_list]}";
+        local typeKey="${argKey}${keySep}type";
+        local argType=${parameterDefinitions[${typeKey}]};
+        local argSpecified="${paramVals[${keyPrefix}specified]}";
+        local argRequired="${parameterDefinitions[${keyPrefix}required]}";
+        local argDefault="${parameterDefinitions[${keyPrefix}default]}";
+        local argPriority="${parameterDefinitions[${keyPrefix}priority]}";
+        if [ "$argPriority" == '1' ] && [ "$argSpecified" == '1' ]; then
+            local argCallbabck="${parameterDefinitions[${keyPrefix}callback]}";
+            if [ ! -z "$argCallbabck" ]; then
+                "$argCallbabck";
+            fi;
+        fi;
+        if [ "${argSpecified}" != '1' ] && [ "${argRequired}" == '1' ]; then
+            paramErrors+=("The argument \"${argName}(${aliasList})\" is required");
+        fi;
+        if [ "$hasValue" == 'y' ] && [ -z "${paramVals[$argKey]}" ] && [ "${argRequired}" == '1' ]; then
+            paramErrors+=("The argument \"${argName}(${aliasList})\" requires a value");
+        else
+            if [ "$hasValue" == 'n' ] && [ ! -z "${parameterDefinitions[$argKey]}" ]; then
+                paramErrors+=("The argument \"${argName}(${aliasList})\" can not have a value");
+            else
+                if [ "$hasValue" == 'y' ] && [ -z "${paramVals[$argKey]}" ] && [ "${argSpecified}" == '1' ]; then
+                    paramErrors+=("The argument \"${argName}(${aliasList})\" requires a value");
+                fi;
+            fi;
+        fi;
+        if [ "${argSpecified}" == '1' ]; then
+            local loopCount=0;
+            local __arr_len="${parameterDefinitions[${keyPrefix}excludes__count]}";
+            while [ $loopCount -lt $__arr_len ]; do
+                local excludesKey="${parameterDefinitions[${keyPrefix}excludes<${loopCount}>]}";
+                if [ "${paramVals[${excludesKey}${keySep}specified]}" == '1' ]; then
+                    local excludesName="${parameterDefinitions[${excludesKey}${keySep}name]}";
+                    local excludesAliases="${parameterDefinitions[${excludesKey}${keySep}alias_list]}";
+                    paramErrors+=("The argument \"${argName}(${aliasList})\" can not be used with \"${excludesName}(${excludesAliases})\"");
+                fi;
+                let loopCount=loopCount+1;
+            done;
+        fi;
+        if [ "${argSpecified}" == '1' ]; then
+            local loopCount=0;
+            local __arr_len="${parameterDefinitions[${keyPrefix}includes__count]}";
+            while [ $loopCount -lt $__arr_len ]; do
+                local excludesKey="${parameterDefinitions[${keyPrefix}includes<${loopCount}>]}";
+                if [ "${paramVals[${excludesKey}${keySep}specified]}" == '0' ]; then
+                    local excludesName="${parameterDefinitions[${excludesKey}${keySep}name]}";
+                    local excludesAliases="${parameterDefinitions[${excludesKey}${keySep}alias_list]}";
+                    paramErrors+=("The argument \"${excludesName}(${excludesAliases})\" must also be specified when using \"${argName}(${aliasList})\"");
+                fi;
+                let loopCount=loopCount+1;
+            done;
+        fi;
+        local __arr_len="${parameterDefinitions[${keyPrefix}required-unless__count]}";
+        if [ "${argSpecified}" != '1' ] && [ "$__arr_len" -gt 0 ]; then
+            local loopCount=0;
+            local -a __req_unless_errs;
+            local invalid=1;
+            while [ $loopCount -lt $__arr_len ]; do
+                local excludesKey="${parameterDefinitions[${keyPrefix}required-unless<${loopCount}>]}";
+                if [ "${paramVals[${excludesKey}${keySep}specified]}" != '1' ]; then
+                    local excludesAliases="${parameterDefinitions[${excludesKey}${keySep}alias_list]}";
+                    local excludesName="${parameterDefinitions[${excludesKey}${keySep}name]}";
+                    __req_unless_errs+=("The argument \"${argName}(${aliasList})\" is required unless \"${excludesName}(${excludesAliases})\" is specified.");
+                else
+                    invalid=0;
+                fi;
+                let loopCount=loopCount+1;
+            done;
+            if [ "$invalid" == '1' ]; then
+                for __req_unless_err in "${__req_unless_errs[@]}";
+                do
+                    paramErrors+=("$__req_unless_err");
+                done;
+            fi;
+        fi;
+        if [ "${argType}" == "switch" ] && [ "${argSpecified}" == '1' ]; then
+            paramVals[$argKey]=1;
+        fi;
+        if [ "${argType}" == "file_exists" ] && [ "${argSpecified}" == '1' ] && [ ! -f "${paramVals[$argKey]}" ] && [ ! -f "$(pwd)/${paramVals[$argKey]}" ]; then
+            paramErrors+=("The file \"${paramVals[$argKey]}\" specified for argument \"${argName}(${aliasList})\" could not be found.");
+        fi;
+        if [ "${argType}" == "dir_exists" ] && [ "${argSpecified}" == '1' ] && [ ! -d "${paramVals[$argKey]}" ]; then
+            paramErrors+=("The directory \"${paramVals[$argKey]}\" specified for argument \"${argName}(${loopCountaliasList})\" could not be found.");
+        fi;
+        if [ "${argType}" == "enum" ] && [ "${argSpecified}" == '1' ]; then
+            local __enum_count=0;
+            local __arr_len="${parameterDefinitions[${keyPrefix}enum-value__count]}";
+            local enumFound=0;
+            while [ $__enum_count -lt $__arr_len ]; do
+                local __enum_val="${parameterDefinitions[${keyPrefix}enum-value<${__enum_count}>]}";
+                if [ "${__enum_val}" == "${paramVals[$argKey]}" ]; then
+                    enumFound=1;
+                    break;
+                fi;
+                let __enum_count=__enum_count+1;
+            done;
+            if [ "${enumFound}" == '0' ]; then
+                local __enum_vals="${parameterDefinitions[${keyPrefix}enum-value_list]}";
+                paramErrors+=("The argument \"${argName}(${aliasList})\" must be one of these values: \"${__enum_vals}\"");
+            fi;
+        fi;
+        if [ "${argSpecified}" != '1' ] && [ ! -z "$argDefault" ]; then
+            paramVals["$argKey"]="$argDefault";
+        fi
+    };
+    function parameters.isSpecified () 
+    { 
+        local -A __params;
+        __params['key']=;
+        params.get "$@";
+        local argKey="${__params['key']}";
+        local keySep='>>';
+        local keyPrefix="${argKey}${keySep}";
+        if [ "${paramVals[${keyPrefix}specified]}" == '1' ]; then
+            return 0;
+        fi;
+        return 1
+    };
+    function parameters.arrContains () 
+    { 
+        local haystack=${!1};
+        local needle="$2";
+        printf "%s
+" ${haystack[@]} | grep -q "^$needle$"
+    }
+}
+params.init () 
+{ 
+    function params.__init () 
+    { 
+        import.useModule 'params_base'
+    };
+    function params.get () 
+    { 
+        params_base.get "$@"
+    };
+    function params.getUntil () 
+    { 
+        params_base.getUntil "$@"
+    }
+}
+params_base.init () 
+{ 
+    function params_base.get () 
+    { 
+        local __params_count=0;
+        local __pos_count=0;
+        local __is_val=0;
+        local __val_key='';
+        local __var;
+        for __var in "${@}";
+        do
+            if [ $__is_val -eq 1 ]; then
+                __is_val=0;
+                __params["$__val_key"]="$__var";
+                __val_key='';
+            else
+                if [ "${__var::2}" == "--" ]; then
+                    __is_val=1;
+                    __val_key="${__var:2}";
+                    __params["$__val_key"]='';
+                else
+                    __params["pos[${__pos_count}]"]="$__var";
+                    let __pos_count=__pos_count+1;
+                fi;
+            fi;
+            let __params_count=__params_count+1;
+        done
+    };
+    function params_base.getUntil () 
+    { 
+        local untilVal="${1}";
+        shift;
+        local paramsCount=0;
+        local posCount=0;
+        local isVal=0;
+        local valKey='';
+        local argVal;
+        for argVal in "${@}";
+        do
+            if [ $isVal -eq 1 ]; then
+                isVal=0;
+                __params["$valKey"]="$argVal";
+                valKey='';
+            else
+                if [ "${argVal::2}" == "--" ]; then
+                    isVal=1;
+                    valKey="${argVal:2}";
+                    __params["$valKey"]='';
+                else
+                    __params["pos[${posCount}]"]="$argVal";
+                    let posCount=posCount+1;
+                fi;
+            fi;
+            let paramsCount=paramsCount+1;
+            shift;
+            if [ "${argVal}" == "${untilVal}" ]; then
+                remainder=("${@}");
+                break;
+            fi;
+        done
+    }
+}
+resource.init () 
+{ 
+    function resource.includeFile () 
+    { 
+        local __file_path="$1";
+        local __wrap_function="$2";
+        local __wrapped_function;
+        if [ ! -f "$__file_path" ]; then
+            echo "Failed to include file \"${__file_path}\"";
+            logger.die;
+            return 1;
+        fi;
+        local nl='
+';
+        __wrapped_function="${__wrap_function}() {${nl}cat << 'EOF'${nl}$(cat ${__file_path})${nl}EOF${nl}}";
+        eval "$(echo "${__wrapped_function}")"
+    };
+    function resource.relative () 
+    { 
+        local __file_path="$1";
+        local __importOp="$2";
+        local namespace="$3";
+        local basePath=;
+        local relPath=;
+        [[ "$__file_path" == *"=="* ]] && { 
+            basePath="${__file_path/%==*/}";
+            relPath="${__file_path/#*==/}"
+        };
+        local fullPath="${basePath}/${relPath}";
+        local __find='/';
+        local __rep=':-:';
+        local __wrap_function="${namespace}.resource.${relPath//$__find/$__rep}";
+        local getFunction="function ${namespace}.resource.get() {${nl}";
+        local nl='
+';
+        getFunction="${getFunction}    local __file_path=\"\$1\"${nl}";
+        getFunction="${getFunction}    local __wrap_function=\"${namespace}.resource.\${__file_path////:-:}\"${nl}";
+        getFunction="${getFunction}    import.functionExists \"\${__wrap_function}\" || {${nl}";
+        getFunction="${getFunction}        logger.error --message \"Resource '\${__file_path}' not found.\"${nl}";
+        getFunction="${getFunction}        logger.die${nl}";
+        getFunction="${getFunction}    }${nl}";
+        getFunction="${getFunction}    \$__wrap_function${nl}";
+        getFunction="${getFunction}}${nl}";
+        source <(echo "${getFunction}");
+        resource.includeFile "${fullPath}" "${__wrap_function}"
+    };
+    function resource.get () 
+    { 
+        local __file_path="$1";
+        local __find='/';
+        local __rep=':-:';
+        local __wrap_function="resource.${__file_path//$__find/$__rep}";
+        import.functionExists "${__wrap_function}" || { 
+            logger.error --message "Resource '${__file_path}' not found.";
+            logger.error --message "The resource function '${__wrap_function}' not found.";
+            logger.error --message "Make sure the resource path exists and has been included as a resource.";
+            logger.die
+        };
+        $__wrap_function
+    }
+}
+string.init () 
+{ 
+    function string.return_value () 
+    { 
+        local __value="$1";
+        local __returnvar=$2;
+        if [[ -n "$__returnvar" ]]; then
+            eval $__returnvar="$(echo -e '$__value')";
+        else
+            echo "$__value";
+        fi
+    };
+    function string.padding () 
+    { 
+        local __return=$1;
+        local __pad_chars="$2";
+        local __length="$3";
+        if [ "$__pad_chars" == ' ' ]; then
+            __pad_chars="@:space:@";
+        fi;
+        local __pad_str=$(echo -e "$__pad_chars"             | awk -v r="$__length" '{ for(i=0;i<r;i++) printf $1; } END { printf "\n" }');
+        __pad_str="${__pad_str//@:space:@/ }";
+        string.return_value "$__pad_str" $__return
+    };
+    function string.pad () 
+    { 
+        local __return=$1;
+        local __in_str="$2";
+        local __pad_chars="$3";
+        local __length="$4";
+        local __in_len=${#__in_str};
+        local __to_pad;
+        let __to_pad=__length-__in_len;
+        if [ "$__to_pad" -gt 0 ]; then
+            if [ "$__pad_chars" == ' ' ]; then
+                __pad_chars="@:space:@";
+            fi;
+            local __pad_str=$(echo -e "$__pad_chars"                 | awk -v r="$__to_pad" '{ for(i=0;i<r;i++) printf $1; } END { printf "\n" }');
+            __pad_str="${__pad_str//@:space:@/ }";
+        fi;
+        string.return_value "${__in_str}${__pad_str}" $__return
+    };
+    function string.endsWith () 
+    { 
+        local __needle="$1";
+        local __haystack="$2";
+        local __needle_len="${#__needle}";
+        local __start=$(( ${#__haystack} - ${__needle_len} ));
+        if [ $__start -lt 0 ]; then
+            return 1;
+        fi;
+        if [ "${__haystack:$__start:$__needle_len}" == "$__needle" ]; then
+            return 0;
+        else
+            return 1;
+        fi
+    };
+    function string.startsWith () 
+    { 
+        local __needle="$1";
+        local __haystack="$2";
+        local __needle_len="${#__needle}";
+        local __start=0;
+        if [ $__start -lt 0 ]; then
+            return 1;
+        fi;
+        if [ "${__haystack:$__start:$__needle_len}" == "$__needle" ]; then
+            return 0;
+        else
+            return 1;
+        fi
+    };
+    function string.removePrefix () 
+    { 
+        local __returnvar=$1;
+        local __needle="$2";
+        local __haystack="$3";
+        local __needle_len="${#__needle}";
+        local __start=0;
+        if ! string.startsWith "$__needle" "$__haystack"; then
+            if [[ -n "$__returnvar" ]]; then
+                eval $__returnvar="$(echo -e '$__haystack')";
+            else
+                echo "$return_var";
+            fi;
+            return 1;
+        else
+            local __new_val=${__haystack/#$__needle/};
+            if [[ -n "$__returnvar" ]]; then
+                eval $__returnvar="$(echo -e '$__new_val')";
+            else
+                echo "$return_var";
+            fi;
+            return 0;
+        fi
+    };
+    function string.removeSuffix () 
+    { 
+        local __returnvar="$1";
+        local __needle="$2";
+        local __haystack="$3";
+        local __needle_len="${#__needle}";
+        local __start=0;
+        if ! string.endsWith "$__needle" "$__haystack"; then
+            if [[ -n "$__returnvar" ]]; then
+                eval $__returnvar="$(echo -e '$__haystack')";
+            else
+                echo "$return_var";
+            fi;
+            return 1;
+        else
+            local __new_val=${__haystack/%$__needle/};
+            if [[ -n "$__returnvar" ]]; then
+                eval $__returnvar="$(echo -e '$__new_val')";
+            else
+                echo "$return_var";
+            fi;
+            return 0;
+        fi
+    };
+    function string.countChar () 
+    { 
+        local __return_val=$1;
+        local __needle="$2";
+        local __haystack="$3";
+        local __temp_str=${__haystack/${__needle}/};
+        local __char_num=$(( ${#__haystack} - ${#__temp_str} ));
+        eval $__return_val="$(echo -e '$__char_num')"
+    };
+    function string.toUpper () 
+    { 
+        local __return_val=$1;
+        local __str="$2";
+        local __ret=${__str^^};
+        string.return_value "$__ret" $__return_val
+    };
+    function string.toLower () 
+    { 
+        local __return_val=$1;
+        local __str="$2";
+        local __ret=${__str,,};
+        string.return_value "$__ret" $__return_val
+    };
+    function string.contains () 
+    { 
+        local __needle="$1";
+        local __haystack="$2";
+        if [[ "$__haystack" == *"$__needle"* ]]; then
+            return 0;
+        else
+            return 1;
+        fi
+    };
+    function string.replace () 
+    { 
+        local __return_val=$1;
+        local __needle="$2";
+        local __replace="$3";
+        local __haystack="$4";
+        local __ret=${__haystack/$__needle/$__replace};
+        string.return_value "$__ret" $__return_val
+    };
+    function string.trimLeft () 
+    { 
+        local __return_val=$1;
+        local var="$2";
+        var="${var#"${var%%[![:space:]]*}"}";
+        string.return_value "$var" $__return_val
+    };
+    function string.trimRight () 
+    { 
+        local __return_val=$1;
+        local var="$2";
+        var="${var%"${var##*[![:space:]]}"}";
+        string.return_value "$var" $__return_val
+    };
+    function string.trim () 
+    { 
+        local __return_val=$1;
+        local var="$2";
+        local __trimmed;
+        string.trimLeft __trimmed "$var";
+        string.trimRight __trimmed "$__trimmed";
+        string.return_value "$__trimmed" $__return_val
+    };
+    function string.hash () 
+    { 
+        cksum <<< "${1}" | cut -f 1 -d ' '
+    }
+}
+utils.bf3_cmd.init () 
+{ 
+    if [ -z $BF3_utils_bf3_cmd_VARS_REAL ]; then
+        declare -A -g BF3_utils_bf3_cmd_VARS_REAL;
+        declare -g -n BF3_utils_bf3_cmd_VARS=BF3_utils_bf3_cmd_VARS_REAL;
+    fi;
+    BF3_utils_bf3_cmd_VARS[namespace]='utils.bf3_cmd';
+    function utils.bf3_cmd.createCmd::args () 
+    { 
+        parameters.add --key 'namespace' --namespace 'utils.bf3_cmd.createCmd' --name 'Namespace.' --alias '--namespace' --alias '-n' --desc 'The new command namespae' --required '1' --has-value 'y'
+    };
+    function utils.bf3_cmd.createCmd () 
+    { 
+        logger.info --message "Creating command...";
+        "utils.bf3_cmd.${FUNCNAME[0]##*.}::args";
+        local -A params;
+        parameters.load --namespace "utils.bf3_cmd.${FUNCNAME[0]##*.}" --args "$@";
+        local nsPath;
+        string.replace nsPath '.' '/' "${params['namespace']}";
+        local fullpath="${BF3_ACTIVE_PATH}/modules/${nsPath}";
+        logger.info --message "Target path is ${fullpath}";
+        local modulePath="${fullpath}/module.sh";
+        [ -f "${modulePath}" ] && { 
+            logger.error --message "A module file already exists at path: ${modulePath}";
+            logger.die
+        };
+        mkdir -p "${fullpath}";
+        local docsPath="${fullpath}/docs";
+        echo "$(utils.bf3_cmd.resource.get './templates/module.sh')" > "${modulePath}";
+        mkdir -p "${docsPath}";
+        echo "$(utils.bf3_cmd.resource.get './templates/docs/module.sh.mo')" > "${docsPath}/module.sh";
+        echo "$(utils.bf3_cmd.resource.get './templates/docs/description.txt')" > "${docsPath}/description.txt";
+        echo "$(utils.bf3_cmd.resource.get './templates/docs/description.bml')" > "${docsPath}/description.bml";
+        logger.info --message "New command created at ${modulePath}";
+        logger.info --message "You can execute you new command by running:";
+        logger.info --message "bf3 --run ${params['namespace']}"
+    };
+    function utils.bf3_cmd.main::args () 
+    { 
+        parameters.add --key 'create' --namespace 'utils.bf3_cmd.main' --name 'Create' --alias '--create' --alias '-c' --desc 'Create a new command.' --default '0' --has-value 'n' --type 'switch' --includes 'utils.bf3_cmd.createCmd::namespace' --required '1'
+    };
+    function utils.bf3_cmd.main () 
+    { 
+        "utils.bf3_cmd.${FUNCNAME[0]##*.}::args";
+        local -A params;
+        local -a unknown;
+        parameters.load --namespace "utils.bf3_cmd.${FUNCNAME[0]##*.}" --ignore-unknown true --args "$@";
+        if [ "${params['create']}" == '1' ]; then
+            utils.bf3_cmd.createCmd "${unknown[@]}";
+        fi
+    }
+}
+utils.bf3_cmd.resource..:-:templates:-:docs:-:description.bml () 
+{ 
+    cat <<'EOF'
+{{#b:fmt}}
+
+Put your command description {{#b:u}}here{{/b:u}}
+
+
+{{/b:fmt}}
+EOF
+
+}
+utils.bf3_cmd.resource..:-:templates:-:docs:-:description.txt () 
+{ 
+    cat <<'EOF'
+Put your command description here
+EOF
+
+}
+utils.bf3_cmd.resource..:-:templates:-:docs:-:module.sh.mo () 
+{ 
+    cat <<'EOF'
+resource.relative '@rel==./description.txt' into '@this'
+# Uncomment this if you want to include a BML description
+resource.relative '@rel==./description.bml' into '@this'
+
+@namespace
+description() {
+    echo "$(@this.resource.get './description.txt')"
+}
+
+# Uncomment this if you want to include a BML description
+descriptionBml() {
+    bml.print --text "$(@this.resource.get './description.bml')"
+}
+EOF
+
+}
+utils.bf3_cmd.resource..:-:templates:-:module.sh () 
+{ 
+    cat <<'EOF'
+#!/usr/bin/env bash
+import.require 'logger.handlers.formatted'
+import.require '@rel==.docs' as '@this.docs'
+
+@namespace
+
+__init() {
+    logger.setConsoleLogHandler \
+        --namespace 'logger.handlers.formatted'
+}
+
+hatWobble() {
+    logger.info \
+        --message "WOBBLE@params[example]"
+}
+
+main::args() {
+    parameters.add --key 'example' \
+        --namespace '@this.main' \
+        --name 'Example Arg' \
+        --alias '--example' \
+        --alias '-e' \
+        --desc 'An example argument.' \
+        --default '!!!' \
+        --has-value 'y'
+}
+
+main() {
+    @=>params
+    @this.hatWobble
+}
+EOF
+
+}
+utils.bf3_cmd.resource.get () 
+{ 
+    local __file_path="$1";
+    local __wrap_function="utils.bf3_cmd.resource.${__file_path////:-:}";
+    import.functionExists "${__wrap_function}" || { 
+        logger.error --message "Resource '${__file_path}' not found.";
+        logger.die
+    };
+    $__wrap_function
+}
+vendor.init () 
+{ 
+    function vendor.__init () 
+    { 
+        import.useModule 'vendor_base'
+    };
+    function vendor.wrap () 
+    { 
+        vendor_base.wrap "$@"
+    };
+    function vendor.getPath () 
+    { 
+        vendor_base.getPath "$@"
+    }
+}
+vendor_base.init () 
+{ 
+    function vendor_base.wrap () 
+    { 
+        local __file_path="$1";
+        local __wrap_function="$2";
+        local __test_path;
+        local __vendor_path_var;
+        local __wrapped_function;
+        for __vendor_path_var in "${__import_PATHS[@]}";
+        do
+            __test_path="${__vendor_path_var}/vendor/${__file_path}";
+            if [ -f "$__test_path" ]; then
+                __wrapped_function="${__wrap_function}() {\n$(cat ${__test_path})\n}";
+                eval "$(echo -e "${__wrapped_function}")";
+                break;
+            fi;
+        done
+    };
+    function vendor_base.getPath () 
+    { 
+        local __return_path=$1;
+        local __file_path="$2";
+        local __test_path;
+        local __vendor_path_var;
+        for __vendor_path_var in "${__import_PATHS[@]}";
+        do
+            __test_path="${__vendor_path_var}/vendor/${__file_path}";
+            if [ -f "$__test_path" ]; then
+                string.return_value "$__test_path" $__return_path;
+                break;
+            fi;
+        done
+    }
+}
+declare -a __import_DEPENDENCIES=([0]="string" [1]="vendor>base" [2]="vendor" [3]="resource" [4]="build.transpiler" [5]="params>base" [6]="params" [7]="logger.handlers.basic" [8]="logger" [9]="parameters" [10]="docs.help" [11]="utils.bf3_cmd")
+declare -A -g __import_INITED
+
+import.initModule() {
+    local __import_modName="$1"
+    import.functionExists "${__import_modName}.init" && {
+        "${__import_modName}.init"
+    }
+    if import.functionExists "${__import_modName}.__init"; then
+        "${__import_modName}.__init"
+    fi
+    __import_INITED["${__import_modName}"]='1'
+}
+import.useModule() {
+    local __import_modName="$1"
+    if [[ ! ${__import_INITED["${__import_modName}"]+exists} ]]; then
+        import.initModule "$__import_modName"
+    else
+        import.functionExists "${__import_modName}.init" && {
+            "${__import_modName}.init"
+        }
+    fi
+}
+import.useModules() {
+    local moduleName
+    for moduleName in "${__import_DEPENDENCIES[@]}"
+    do
+        # Replace > with underscore to access namespace
+        import.useModule "${moduleName//>/_}"
+    done
+}
+import.functionExists() {
+    declare -f -F $1 > /dev/null
+    return $?
+}
+import.isModeuleInitialized() {
+    local __import_modName="$1"
+    if [[ "${__import_modName}" == '' ]]; then
+        return 1
+    fi
+    if [[ ! ${__import_INITED["${__import_modName}"]+exists} ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+cmd.run.loadArgs() {
+    logger.args
+    # Load main function args for the module if they exist
+    if import.functionExists "${globals[commandNamespace]}.main::args"; then
+        "${globals[commandNamespace]}.main::args"
+    fi
+    local -A params
+    local -a unknown
+    parameters.load --namespace 'global' --ignore-unknown true --args "$@"
+    declare -A -g globals
+    for paramValKey in "${!params[@]}"; do
+        globals["${paramValKey}"]="${params[${paramValKey}]}"
+    done
+    logger.processStartupArgs
+    "${globals[commandNamespace]}.main" "${unknown[@]}"
+}
+docs.help.printArgs::cached () 
+{ 
+    cat <<'EOF'
+
+Arguments
+
+--help, Show Help
+Print help for the command.
+
+--log-level, Log Level
+The level of logging to output during execution.
+Must be one of the values: debug,info,warning,error
+
+--create,-c, Create
+Create a new command.
+EOF
+
+}
+docs.help.printCommandInfo::cached () 
+{ 
+    cat <<'EOF'
+bf3-cmd
+
+
+Info
+	Built On: 2023-01-22 12:45:37
+	Module: 
+EOF
+
+}
+import.useModules
+globals[built]=true
+globals[commandNamespace]='utils.bf3_cmd'
+globals[commandName]='bf3-cmd'
+globals[buildDate]='2023-01-22 12:45:37'
+cmd.run.loadArgs "$@"

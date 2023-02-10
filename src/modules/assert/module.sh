@@ -31,7 +31,11 @@
     functionExists() {
         @=>params
         logger.print \
-            --prefix 'TEST' \
+            --prefix 'TEST: ' \
+            --message \
+            "@params[description]"
+        logger.print \
+            --prefix 'RESULT: ' \
             --no-newline '1' \
             --message \
             "Checking that the function '@params[name]' exists"
@@ -79,14 +83,17 @@
     stringEquals() {
         @=>params
         logger.print \
-            --prefix 'TEST' \
+            --prefix 'TEST: ' \
+            --message \
+            "@params[description]"
+        logger.print \
+            --prefix 'RESULT: ' \
             --no-newline '1' \
             --message \
-            "Checking that the string '@params[expected]' is '@params[actual]' exists"
+            "Checking that the string '@params[expected]' is '@params[actual]'"
         [ "@params[expected]" == "@params[actual]" ]
         local result="$?"
         @this.handleResult "$result"
-
     }
 
     handleResult() {

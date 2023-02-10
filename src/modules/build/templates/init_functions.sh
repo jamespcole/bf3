@@ -2,7 +2,9 @@ declare -A -g __import_INITED
 
 import.initModule() {
     local __import_modName="$1"
-    "${__import_modName}.init"
+    import.functionExists "${__import_modName}.init" && {
+        "${__import_modName}.init"
+    }
     if import.functionExists "${__import_modName}.__init"; then
         "${__import_modName}.__init"
     fi
@@ -13,7 +15,9 @@ import.useModule() {
     if [[ ! ${__import_INITED["${__import_modName}"]+exists} ]]; then
         import.initModule "$__import_modName"
     else
-        "${__import_modName}.init"
+        import.functionExists "${__import_modName}.init" && {
+            "${__import_modName}.init"
+        }
     fi
 }
 import.useModules() {
@@ -28,7 +32,17 @@ import.functionExists() {
     declare -f -F $1 > /dev/null
     return $?
 }
-
+import.isModeuleInitialized() {
+    local __import_modName="$1"
+    if [[ "${__import_modName}" == '' ]]; then
+        return 1
+    fi
+    if [[ ! ${__import_INITED["${__import_modName}"]+exists} ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
 
 cmd.run.loadArgs() {
     logger.args
@@ -43,6 +57,7 @@ cmd.run.loadArgs() {
     for paramValKey in "${!params[@]}"; do
         globals["${paramValKey}"]="${params[${paramValKey}]}"
     done
+    logger.setFormatter --namespace "${globals[logFormatter]}"
     logger.processStartupArgs
     "${globals[commandNamespace]}.main" "${unknown[@]}"
 }

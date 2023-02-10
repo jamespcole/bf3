@@ -34,10 +34,43 @@ bf3.run.module() {
         --required-unless 'run::run' \
         --has-value 'y'
 
+    parameters.add --key 'logger' \
+        --namespace 'run' \
+        --name 'Logger' \
+        --alias '--logger' \
+        --desc 'The namespace of the logger to include.' \
+        --default 'logger.handlers.formatted' \
+        --has-value 'y'
+
+
+    # local -A params
+    # local -a unknown
+    # parameters.load --namespace 'global' --ignore-unknown true --args "$@"
+    # for paramValKey in "${!params[@]}"; do
+    #     globals["${paramValKey}"]="${params[${paramValKey}]}"
+    # done
+
+    # import.require "${globals['logFormatter']}"
+    # import.useModule "${globals['logFormatter']}"
 
     local -A params
     local -a unknown
     parameters.load --namespace 'run' --ignore-unknown true --args "${@}"
+
+    # local -A params
+    # local -a unknown
+    # parameters.load --namespace 'global' --ignore-unknown true --args "${unknown[@]}"
+    # for paramValKey in "${!params[@]}"; do
+    #     globals["${paramValKey}"]="${params[${paramValKey}]}"
+    # done
+    
+    # logger.setFormatter --namespace 'logger.handlers.formatted'
+
+    # import.require 'logger.handlers.formatted'
+    # import.useModules
+
+    import.require "${params[logger]}"
+
 
     globals['isBuilding']=false
 
@@ -75,6 +108,8 @@ bf3.run.module() {
         logger.hr
 
         import.useModules
+        # import.require "${params['logger']}"
+        logger.setFormatter --namespace "${params['logger']}"
         bf3.cmd.run "${params['run']}" "${unknown[@]}"
     else
         globals['isBuilding']=true

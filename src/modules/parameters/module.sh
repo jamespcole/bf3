@@ -191,7 +191,9 @@ validate() {
     local -A __params
     __params['namespace']=
     __params['ignore-unknown']=false
+    __params['ignore-errors']=false
     params.getUntil '--args' "${@}"
+    local ignoreErrors=${__params['ignore-errors']}
 
     local parameterNamespace="${__params['namespace']}"
 
@@ -202,17 +204,19 @@ validate() {
             @this.validateArg "${argKey}"
         }
     done
+    
+    if [ ! "${ignoreErrors}" == 'true' ]; then
+        if [ "${#paramErrors[@]}" -gt 0 ]; then
+            for __arg_err in "${paramErrors[@]}"; do
+                logger.error --message "$__arg_err"
+            done
+            # exit 1
 
-    if [ "${#paramErrors[@]}" -gt 0 ]; then
-        for __arg_err in "${paramErrors[@]}"; do
-            logger.error --message "$__arg_err"
-        done
-        # exit 1
-
-        logger.hr
-        logger.info --message \
-            "To see a full list of options and more info use the '--help' argument"
-        @this.die
+            logger.hr
+            logger.info --message \
+                "To see a full list of options and more info use the '--help' argument"
+            @this.die
+        fi
     fi
     # echo "-------------- arg vals -----------------"
     # for __arg in "${!paramVals[@]}"; do
@@ -228,11 +232,13 @@ loadParams() {
 }
 
 load() {
+    paramErrors=()
     local -A __params
 
     __params['namespace']=
     __params['ignore-unknown']=false
     __params['skip-validation']=false
+    __params['ignore-errors']=false
     params.get "${@}"
     local parameterNamespace="${__params['namespace']}"
 

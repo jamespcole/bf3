@@ -11,7 +11,7 @@ scriptsDir = $scriptsDir ||= File.expand_path("scripts/vagrant", File.dirname(__
 afterScriptPath = scriptsDir + '/start_provisioning.sh'
 
 # Specify the base box
-baseBox = 'bento/ubuntu-18.04'
+baseBox = 'bento/ubuntu-20.04'
 
 $msg = <<MSG
 ------------------------------------------------------
@@ -32,6 +32,7 @@ Vagrant.configure("2") do |config|
 
     # Setup synced folder
     config.vm.synced_folder ".", "/home/vagrant/app"
+    config.vm.synced_folder "./custom_modules", "/home/vagrant/custom_modules"
 
     # VM specific configs
     config.vm.provider "virtualbox" do |v|

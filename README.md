@@ -236,6 +236,15 @@ main() {
 
 ```
 
+For convenience there is the command `bf3-cmd` which creates all the stub files required for a command automatically.
+
+The following would create a new command with the namespace 'cmds.test'.
+
+```bash
+bf3-cmd --create -n cmds.test
+```
+
+
 ### Running a Command
 
 There are two ways to run a command, either by compiling it first(covered later) or by compiling it on the fly with the `bf3 --run` command(useful when developing and debugging).
@@ -296,6 +305,126 @@ bf3 --run 'mymodules.examples.example2' --help
 ```
 The information about the new `suffix` argument will automatically be displayed.
 
+## Transpiler
+The BF3 transpiler provides a number of syntax additions not available in standard bash.  The purpose of this syntactic sugar is mainly to provide ease of use when working with namespaces.  The `@this` command is particularly useful as it replaces the `@this` with the namespace of the current module even when its default name has been overridden when imported.
+
+### @namespace
+This tells the transpiler that this is the beginning of the namespaced code.  Imports should go before the `@namespace` declaration.
+
+### @this
+Refers to the current namespace within the scope of the namespace.
+
+### @=>params
+Used to call argument handling/validation functions and populate variables with the passed values.
+
+```bash
+@namespace
+
+main::args() {
+    parameters.add --key 'suffix' \
+        --namespace '@this.main' \
+        --name 'Message Suffix' \
+        --alias '--suffix' \
+        --alias '-s' \
+        --desc 'Specify the suffix for the message.' \
+        --default '!!!' \
+        --has-value 'y'
+}
+
+main() {
+    @=>params
+    echo "The suffix is @params[suffix]"
+    @params[suffix]='123'
+    echo "The suffix is now @params[suffix]"
+}
+```
+
+When executed it would output the following:
+```bash
+bf3 --run build.transpiler.examples.params --suffix 456
+The suffix is 456
+The suffix is now 123
+```
+
+### @=>*params
+The same as `@=>params` except that it will not throw an error if unknown arguments are passed.  The unkown arguments will be placed in a variable called `unknown` which can then be passed on to other functions.
+
+```bash
+@namespace
+
+example::args() {
+    parameters.add --key 'example' \
+        --namespace '@this.example' \
+        --name 'Message Suffix' \
+        --alias '--example' \
+        --alias '-e' \
+        --desc 'An example argument' \
+        --default '!!!' \
+        --has-value 'y'
+}
+
+example() {
+    @=>params
+    echo "The example value is @params[example]"
+}
+
+main::args() {
+    parameters.add --key 'suffix' \
+        --namespace '@this.main' \
+        --name 'Message Suffix' \
+        --alias '--suffix' \
+        --alias '-s' \
+        --desc 'Specify the suffix for the message.' \
+        --default '!!!' \
+        --has-value 'y'
+}
+
+main() {
+    @=>*params
+    echo "The suffix is @params[suffix]"
+    # Now pass the unknown parameters into the next function
+    @this.example "${unknown[@]}"
+}
+```
+
+When executed it would output the following:
+```bash
+bf3 --run build.transpiler.examples.params_unknown --suffix 456 --example woo
+The suffix is 456
+The example value is woo
+```
+
+### @params
+Used to call access the parameters passed to the function which were parsed by `@=>params`.
+
+#### Setting
+Values can be set using the following syntax:
+
+```bash
+@params[param_name]='some value'
+```
+#### Getting
+Values can be retrieved using the following syntax:
+
+```bash
+echo "@params[param_name]"
+```
+
+### @get-> and @set->
+The `@set->` and `@get->` commands are used for accessing module variables from outside a namespace(unlike `@this[variable_name]` within the namespace).
+
+Detailed examples of their usage are given in the Module Variables section of this document.
+
+The basic syntax is:
+
+```bash
+# Setting
+@set->@this.module2[var1]='!!!'
+# Getting
+echo "var1 in @this.module2 is @get->@this.module2[var1]"
+```
+
+
 
 ## Building/Compiling a Command
 
@@ -312,6 +441,89 @@ hello-world --suffix '@@@'
 ```
 
 The compiled script file will be located in the `install_hooks` directory of you current active BF3 environment.
+
+### Notes on Compiled File Size
+
+Including large dependencies can greatly increase the size of your compiled module.  A typical example would be using the formatted logging handler that pulls in dependecies on bml, mustache and others.  The formatted logger provides much prettier output but at the cost of pulling in these additional dependencies.  While it is generally recommended to use the formatted logger if you want a minimal build without colourised output it can be omitted from the build.  
+
+For example, this file imports the formatted logger:
+
+```bash
+import.require 'logger.handlers.formatted'
+
+@namespace
+
+__init() {
+    logger.setConsoleLogHandler \
+        --namespace 'logger.handlers.formatted'
+}
+
+hatWobble() {
+    logger.info \
+        --message "WOBBLE@params[suffix]"
+}
+
+main::args() {
+    parameters.add --key 'suffix' \
+        --namespace '@this.main' \
+        --name 'Message Suffix' \
+        --alias '--suffix' \
+        --alias '-s' \
+        --desc 'Specify the suffix for the message.' \
+        --default '!!!' \
+        --has-value 'y'
+}
+
+main() {
+    @=>params
+    @this.hatWobble
+}
+```
+
+After building we can check the number of lines:
+```bash
+bf3 --build examples.ex_maximal --build-name ex_maximal
+wc -l "$(which ex_maximal)"
+3377 /home/vagrant/app/src/install_hooks/ex_maximal
+```
+
+The built version contains 3377 lines.
+
+This version does not include the formatted logger:
+
+```bash
+@namespace
+
+hatWobble() {
+    logger.info \
+        --message "WOBBLE@params[suffix]"
+}
+
+main::args() {
+    parameters.add --key 'suffix' \
+        --namespace '@this.main' \
+        --name 'Message Suffix' \
+        --alias '--suffix' \
+        --alias '-s' \
+        --desc 'Specify the suffix for the message.' \
+        --default '!!!' \
+        --has-value 'y'
+}
+
+main() {
+    @=>params
+    @this.hatWobble
+}
+```
+
+After building we can check the number of lines:
+```bash
+bf3 --build examples.ex_minimal --build-name ex_minimal
+1419 /home/vagrant/app/src/install_hooks/ex_minimal
+```
+
+This version clocks in at 1419 lines.
+
 
 ## Managing BF3 Environments
 

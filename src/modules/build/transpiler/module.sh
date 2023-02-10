@@ -189,8 +189,8 @@ build.transpiler.init() {
             | sed "s/@this:/${baseNamespace}:/g" \
             | sed "s/@params\[\([^]]*\)\]=/params['\1']=/g" \
             | sed "s/@params\[\([^]]*\)\]/\${params['\1']}/g" \
-            | sed "s/@=>\*params/\"${baseNamespace}.\${FUNCNAME[0]##*.}::args\"; local -A params; local -a unknown; parameters.load --namespace \"${baseNamespace}.\${FUNCNAME[0]##*.}\" --ignore-unkown true --args \"\$@\"\n/" \
-            | sed "s/@=>params/\"${baseNamespace}.\${FUNCNAME[0]##*.}::args\"; local -A params; parameters.load --namespace \"${baseNamespace}.\${FUNCNAME[0]##*.}\" --args \"\$@\"\n/" \
+            | sed "s/@=>\*params/\"${baseNamespace}.\${FUNCNAME[0]##*.}::args\"; local -A params; local -a unknown; parameters.load --namespace \"${baseNamespace}.\${FUNCNAME[0]##*.}\" --ignore-unknown true --skip-validation \"\${skipValidation:=false}\" --ignore-errors \"\${ignoreErrors:=false}\" --args \"\$@\"\n/" \
+            | sed "s/@=>params/\"${baseNamespace}.\${FUNCNAME[0]##*.}::args\"; local -A params; parameters.load --namespace \"${baseNamespace}.\${FUNCNAME[0]##*.}\" --skip-validation \"\${skipValidation:=false}\" --ignore-errors \"\${ignoreErrors:=false}\" --args \"\$@\"\n/" \
             | sed "s/@this\[\([^]]*\)\]=/${varsArrName}[\1]=/g" \
             | sed "s/@this\[\([^]]*\)\]/\${${varsArrName}[\1]}/g" \
             | sed "s/@this=>\[\([^]]*\)\]=/${varsArrName}_REAL['\1']=/g" \

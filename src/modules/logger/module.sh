@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 import.require 'params'
 # Testing remove this later
-import.require 'logger.handlers.formatted'
+# import.require 'logger.handlers.formatted'
+import.require 'logger.handlers.basic'
 # import.require 'logger.handlers.fancy'
 
 @namespace
@@ -35,7 +36,8 @@ declare -A -g __logger_HANDLERS
 
 # import.useModule 'logger.handlers.formatted'
 # import.useModule 'logger.handlers.fancy'
-__logger_HANDLERS['console']='logger.handlers.formatted'
+# __logger_HANDLERS['console']='logger.handlers.formatted'
+__logger_HANDLERS['console']='logger.handlers.basic'
 # __logger_HANDLERS['console']='logger.handlers.fancy'
 # import.useModule 'params'
 
@@ -51,6 +53,14 @@ args() {
         --enum-value 'warning' \
         --enum-value 'error' \
         --type 'enum'
+
+	parameters.add --key 'logFormatter' \
+        --namespace 'global' \
+        --name 'Log Formatter' \
+        --alias '--log-fmt' \
+        --desc 'The log formatter to use.' \
+        --default 'logger.handlers.formatted' \
+        --has-value 'y'
 }
 #
 # argsOld() {
@@ -89,6 +99,15 @@ args() {
 # }
 processStartupArgs() {
     "${__logger_HANDLERS['console']}.processStartupArgs" "$@"
+}
+setFormatter() {
+	local -A __params
+	__params['namespace']=''
+	params.get "$@"
+	import.isModeuleInitialized "${__params['namespace']}" && {
+		__logger_HANDLERS['console']="${__params['namespace']}"
+	}
+	
 }
 setConsoleLogHandler() {
 	local -A __params

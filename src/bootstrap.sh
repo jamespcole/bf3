@@ -5,7 +5,6 @@ declare -g BF3_EXECUTING_PATH="$(dirname $(readlink -f ${BASH_SOURCE[1]}) )"
 
 import.init && import.__init
 
-# import.require 'args'
 import.require 'parameters'
 import.require 'logger'
 import.require 'docs.help'
@@ -35,9 +34,7 @@ bf3.cmd.bootstrap.init() {
         for paramValKey in "${!params[@]}"; do
             globals["${paramValKey}"]="${params[${paramValKey}]}"
         done
-
-        # parameters.validate --namespace 'run' --ignore-unknown true --args "$@"
-
+        
         "${cmdNameSpace}.main" "${unknown[@]}"
     }
 
@@ -47,6 +44,16 @@ bf3.cmd.bootstrap.init() {
 
         local buildStartMs=$(date +%s%3N)
 
+        globals[commandNamespace]="${cmdNameSpace}"
+        globals[buildDate]="$(date '+%Y-%m-%d %H:%M:%S')"
+
+        local -A params
+        local -a unknown
+        parameters.load --namespace 'global' --ignore-unknown true --args "$@"
+        for paramValKey in "${!params[@]}"; do
+            globals["${paramValKey}"]="${params[${paramValKey}]}"
+        done
+
         local installDir="${BF3_ACTIVE_PATH}/install_hooks"
         mkdir -p "${installDir}"
         local outputFile="${installDir}/${globals['commandName']}"
@@ -54,7 +61,39 @@ bf3.cmd.bootstrap.init() {
         import.require "${cmdNameSpace}"
 
         echo "Writing transpiled functions..."
-        declare -f > "${outputFile}"
+        # declare -f > "${outputFile}"
+        echo '#!/usr/bin/env bash' > "${outputFile}"
+        # local functionNames=$(bash -c 'source  '""${outputFile}""' && declare -F' | awk -F'-f ' '{ print $2 }' )
+        local -A excludedModules
+        excludedModules[bf3.cmd.bootstrap.init]=true
+        excludedModules[build.transpiler.init]=true
+        excludedModules[import.init]=true
+
+        local functionNames=$(declare -F | awk -F'-f ' '{ print $2 }' )
+        local functionName
+        while read functionName; do
+            # echo "? ${functionName}"
+            if [ "${excludedModules[$functionName]}" == true ]; then
+                echo "EXCLUDED ${functionName}"
+                continue
+            fi
+            string.contains ':-:' "${functionName}" && {
+                echo "+ ${functionName}"
+                declare -f "${functionName}" >> "${outputFile}"
+            }
+            string.endsWith '.init' "${functionName}" && {
+                echo "+ ${functionName}"
+                declare -f "${functionName}" >> "${outputFile}"
+            }
+            string.endsWith '.resource.get' "${functionName}" && {
+                echo "+ ${functionName}"
+                declare -f "${functionName}" >> "${outputFile}"
+            }
+            string.startsWith 'vendor.include.' "${functionName}" && {
+                echo "+ ${functionName}"
+                declare -f "${functionName}" >> "${outputFile}"
+            }
+        done < <(echo "${functionNames}")
         echo "Adding dependency list..."
         declare -p __import_DEPENDENCIES >> "${outputFile}"
 
@@ -84,7 +123,7 @@ bf3.cmd.bootstrap.init() {
         echo 'globals[built]=true' >> "${outputFile}"
         echo "globals[commandNamespace]='${cmdNameSpace}'" >> "${outputFile}"
         echo "globals[commandName]='${globals[commandName]}'" >> "${outputFile}"
-        echo "globals[buildDate]='$(date '+%Y-%m-%d %H:%M:%S')'" >> "${outputFile}"
+        echo "globals[buildDate]='${globals[buildDate]}'" >> "${outputFile}"
         echo 'cmd.run.loadArgs "$@"' >> "${outputFile}"
         # echo "${cmdNameSpace}.main \"\$@\"" >> "${outputFile}"
         chmod +x "${outputFile}"
@@ -98,6 +137,16 @@ bf3.cmd.bootstrap.init() {
             timeStr="${seconds}.${remainderMs} seconds"
         fi
 
+
+        # local functionNames=$(bash -c 'source  '""${outputFile}""' && declare -F' | awk -F'-f ' '{ print $2 }' )
+        # local functionName
+        # while read functionName; do
+        #     string.endsWith '.init' "${functionName}" && {
+        #         echo "${functionName}"
+        #         declare -f "${functionName}"
+        #     }
+        # done < <(echo "${functionNames}")
+        # echo "$t12"
         echo ""
         echo "Writing compiled source to '${outputFile}'."
         echo "Command '${globals[commandName]}' built successfuly in ${timeStr}."
